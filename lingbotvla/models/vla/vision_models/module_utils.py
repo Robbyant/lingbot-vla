@@ -9,8 +9,6 @@ import einops
 from PIL import Image, ImageDraw
 
 try:
-    # from morgbd.model.v2 import MoRGBDModel as v2_morgbd
-
     from mdm.model.v2 import MDMModel as v2_morgbd
 
     from moge.model.v2 import MoGeModel as v2
@@ -82,7 +80,7 @@ def get_depth_target(model_type, depth_model, pil_images):
 
     input_images = images / 255.0
     moge_model, morgbd_model = depth_model
-    output_moge = moge_model.infer(input_images, resolution_level=3, num_tokens=256)
+    output_moge = moge_model.infer(input_images, resolution_level=3, num_tokens=256, apply_mask=False)
     depth_pred = output_moge['depth'].squeeze().detach().clone() # moge2
     depth_pred = torch.nan_to_num(depth_pred, nan=0.0, posinf=0.0, neginf=0.0)
     depth_pred *= 1
@@ -90,7 +88,8 @@ def get_depth_target(model_type, depth_model, pil_images):
     depth_target, cls_token = morgbd_model.infer_feat(input_images, depth_pred, 
                                             depth_down_scale=depth_down_scale,
                                             resolution_level=3,
-                                            num_tokens=256)
+                                            num_tokens=256,
+                                            enable_depth_mask=False)
     depth_target = depth_target.permute(0, 2, 3, 1)
     depth_target = depth_target.view(depth_target.shape[0], -1, depth_target.shape[-1])
 

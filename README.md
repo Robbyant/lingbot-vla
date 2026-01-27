@@ -4,7 +4,7 @@
   <a href="assets/LingBot-VLA.pdf"><img src="https://img.shields.io/static/v1?label=Paper&message=PDF&color=red&logo=arxiv"></a>
   <a href="https://technology.robbyant.com/lingbot-vla"><img src="https://img.shields.io/badge/Project-Website-blue"></a>
   <a href="https://huggingface.co/collections/robbyant/lingbot-vla"><img src="https://img.shields.io/static/v1?label=%F0%9F%A4%97%20Model&message=HuggingFace&color=yellow"></a>
-  <a href="https://modelscope.cn/collections/Robbyant/LingBot-VLA"><img src="https://img.shields.io/static/v1?label=🤖 Model&message=ModelScope&color=purple"></a>
+  <a href="https://modelscope.cn/collections/Robbyant/LingBot-VLA"><img src="https://img.shields.io/static/v1?label=%F0%9F%A4%96%20Model&message=ModelScope&color=purple"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-green"></a>
 </p>
 
@@ -52,7 +52,7 @@ pip install /path/to/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp312-cp312-linux
 # Clone the repository
 git clone https://github.com/robbyant/lingbot-vla.git
 cd lingbot-vla/
-git submodule update --init --recursive
+git submodule update --remote --recursive
 pip install -e .
 pip install -r requirements.txt
 # Install LingBot-Depth dependency
@@ -85,11 +85,11 @@ python3 scripts/download_hf_model.py --repo_id robbyant/lingbot-vla-4b --local_d
 
 ## 💻 Post-Training Example
 
-- **Data Preparation**
-Please follow [Robotwin2.0 Preparation](experiment/robotwin/README.md)
+- **Data Preparation**:
+Please follow [RoboTwin2.0 Preparation](experiment/robotwin/README.md)
 
 - **Training Configuration**:
-We provide the mixed post-training configuration in five Robotwin 2.0 tasks ("open_microwave" "click_bell" "stack_blocks_three" "place_shoe" "put_object_cabinet").
+We provide the mixed post-training configuration in five RoboTwin 2.0 tasks ("open_microwave" "click_bell" "stack_blocks_three" "place_shoe" "put_object_cabinet").
 <details>
 <summary><b>Click to expand full YAML configuration</b></summary>
 
@@ -244,7 +244,7 @@ Our LingBot-VLA achieves state-of-the-art results on real-world and simulation b
 </table>
 
 
-- **Robotwin 2.0 (Clean and Randomized)**
+- **RoboTwin 2.0 (Clean and Randomized)**
 
 <table>
   <thead>
