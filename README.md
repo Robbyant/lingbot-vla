@@ -189,7 +189,7 @@ python -m deploy.lingbot_robotwin_policy \
  --port port
 ```
 
-- **Customized Post-training**
+- **Customized Post-training**:
 To construct post-training in specified downstream tasks, we have provided an example and please refer to [Custom](lingbotvla/data/vla_data/README.md) for details.
 ---
 
