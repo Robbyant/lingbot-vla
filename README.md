@@ -41,6 +41,9 @@ data from 9 popular dual-arm robot configurations.
 
 ---
 
+## Tutorial
+
+SO-ARM-101+LeRobot+LingBot-VLA，Post-Training Video Tutorial（同济子豪兄）：https://www.bilibili.com/video/BV1sjLx6HE5D
 
 ## 🛠️ Installation
 Requirements
