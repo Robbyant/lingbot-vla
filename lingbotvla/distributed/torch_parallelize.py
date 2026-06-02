@@ -454,6 +454,12 @@ def build_parallelize_model(
                 if layer.__class__.__name__ == "Qwen2_5_VLDecoderLayer" or layer.__class__.__name__ == "Qwen2_5_VLVisionBlock":
                     logger.info_rank0(f"Apply FSDP2 to {layer.__class__.__name__}.")
                     fully_shard(layer, **mp_fsdp_kwargs)
+
+            # Eliminate backward all-gather by disabling reshard_after_backward.
+            if not enable_full_shard and hasattr(model, "set_reshard_after_backward"):
+                model.set_reshard_after_backward(False, recurse=True)
+                logger.info_rank0("FSDP2: set_reshard_after_backward(False) applied to eliminate backward all-gather.")
+
         elif parallel_state.dp_mode == "fsdp1":
             wrap_policy = partial(
                 lambda_auto_wrap_policy, lambda_fn=lambda module: module.__class__.__name__ in basic_modules
