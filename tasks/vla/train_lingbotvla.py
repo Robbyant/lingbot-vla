@@ -381,11 +381,28 @@ def main():
             if args.train.data_parallel_mode == "fsdp1":
                 grad_norm = model.clip_grad_norm_(max_grad_norm).item()
             else:
-                grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm, foreach=True)
+                # Use optimizer param_groups to get the sharded DTensor params.
+                # When reshard_after_backward=False, model.parameters() returns
+                # unsharded params whose .grad is None after reduce-scatter.
+                all_params = [p for group in optimizer.param_groups for p in group['params']]
+                grad_norm = torch.nn.utils.clip_grad_norm_(all_params, max_grad_norm, foreach=True)
 
             optimizer.step()
             lr_scheduler.step()
             optimizer.zero_grad()
+
+            # Solution A: With reshard_after_backward=False, parameters remain
+            # unsharded after backward. The optimizer updates the sharded DTensor,
+            # but FSDP2's unshard() early-returns if params are already unsharded,
+            # causing the next forward to use the stale unsharded copy.
+            # Manually reshard all FSDP2 modules so the next forward triggers
+            # an all-gather of the freshly updated parameters.
+            # Only needed when enable_full_shard=False (ZeRO-2 mode).
+            if args.train.data_parallel_mode == "fsdp2" and not args.train.enable_full_shard:
+                from torch.distributed.fsdp import FSDPModule
+                for module in model.modules():
+                    if isinstance(module, FSDPModule):
+                        module.reshard()
             if hasattr(grad_norm, "full_tensor"):
                 grad_norm = grad_norm.full_tensor().item()
 
