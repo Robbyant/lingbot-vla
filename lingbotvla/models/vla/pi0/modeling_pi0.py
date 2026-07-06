@@ -27,6 +27,15 @@ from transformers.modeling_outputs import (
     TokenClassifierOutput,
 )
 from transformers.modeling_utils import PreTrainedModel, ALL_ATTENTION_FUNCTIONS
+try:
+    from transformers.utils import LossKwargs
+except ImportError:
+    from typing import TypedDict
+    class LossKwargs(TypedDict, total=False):
+        pass
+    import transformers.utils
+    transformers.utils.LossKwargs = LossKwargs
+# LossKwargs compat
 from transformers.utils import (
     ModelOutput,
     add_start_docstrings,
@@ -34,7 +43,7 @@ from transformers.utils import (
     is_torchdynamo_compiling,
     logging,
     replace_return_docstrings,
-    LossKwargs,
+    LossKwargs,  # type: ignore
     can_return_tuple,
     is_torch_flex_attn_available,
 )
