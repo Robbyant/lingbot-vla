@@ -1421,14 +1421,39 @@ class LingbotVlaPolicy(PreTrainedPolicy):
             images, img_masks, lang_tokens, lang_masks, state, actions, label, noise, time, vlm_causal, self.config.loss_type, depth_targets, norm_qkv
         )
 
-        batch_mean_losses = losses.mean(dim=(1, 2))
-        loss_dict["batch_mean_losses"] = batch_mean_losses.clone()
-
+        # Build one mask over both axes that can be padded independently:
+        #   * joint_mask removes padded robot dimensions.
+        #   * action_is_pad removes action-horizon steps beyond the episode end.
+        # Selecting valid entries before taking the mean is important. Merely
+        # multiplying padded losses by zero would still keep them in the mean's
+        # denominator and make the loss scale depend on proximity to an episode end.
         if joint_mask is not None:
-            losses = losses[joint_mask.unsqueeze(1).expand(-1, losses.size(1), -1)]
+            if joint_mask.shape != (losses.size(0), losses.size(2)):
+                raise ValueError(
+                    f"joint_mask must have shape {(losses.size(0), losses.size(2))}, "
+                    f"got {tuple(joint_mask.shape)}"
+                )
+            valid_loss_mask = joint_mask.to(dtype=torch.bool).unsqueeze(1).expand_as(losses)
         else:
             assert self.config.action_dim is not None, f'action_dim must be specified in config, got None'
             losses = losses[:, :, :self.config.action_dim]
+            valid_loss_mask = torch.ones_like(losses, dtype=torch.bool)
+
+        if action_is_pad is not None:
+            if action_is_pad.shape != losses.shape[:2]:
+                raise ValueError(
+                    f"action_is_pad must have shape {tuple(losses.shape[:2])}, "
+                    f"got {tuple(action_is_pad.shape)}"
+                )
+            valid_loss_mask = valid_loss_mask & ~action_is_pad.to(dtype=torch.bool).unsqueeze(-1)
+
+        valid_counts = valid_loss_mask.sum(dim=(1, 2))
+        batch_mean_losses = (losses * valid_loss_mask).sum(dim=(1, 2)) / valid_counts.clamp_min(1)
+        loss_dict["batch_mean_losses"] = batch_mean_losses.clone()
+
+        losses = losses[valid_loss_mask]
+        if losses.numel() == 0:
+            raise ValueError("The batch contains no valid action targets after applying loss masks")
         loss_dict["losses"] = losses.clone()
 
         # For backward pass
