@@ -52,7 +52,7 @@ class PolicyPreprocessMixin:
         self, observation: dict[str, Tensor], use_bf16: bool = False, noise: Tensor | None = None, num_denoising_step : int = 10
     ):
         self.eval()
-        device = 'cuda'
+        device = next(self.parameters()).device.type
         if use_bf16:
             dtype = torch.bfloat16
         else:
@@ -201,7 +201,13 @@ class LingbotVLAServer:
                 for key in f.keys():
                     merged_weights[key] = f.get_tensor(key)
         policy.load_state_dict(merged_weights, strict=True)
-        policy.cuda()
+        # Device selection: preserve CUDA behavior, enable XPU, fall back to CPU.
+        if torch.cuda.is_available():
+            policy.to("cuda")
+        elif hasattr(torch, "xpu") and torch.xpu.is_available():
+            policy.to("xpu")
+        else:
+            policy.to("cpu")
         
         if self.use_compile:
             policy.model.qwenvl_with_expert = torch.compile(policy.model.qwenvl_with_expert)

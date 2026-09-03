@@ -57,6 +57,20 @@ cd lingbot-vla
 bash install.sh
 ```
 
+> **Hardware support**
+>
+> LingBot-VLA runs on **NVIDIA CUDA, Intel GPUs (XPU), or CPU**. The deployment and evaluation scripts automatically select the available device in this order: CUDA, XPU, then CPU. No code or configuration changes are needed.
+>
+> **Intel GPU (XPU):** install a PyTorch build with XPU support instead of the CUDA wheels:
+>
+> ```bash
+> pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu
+> ```
+>
+> Skip the `flash-attn` step in `install.sh`. It is CUDA-only and is not required on XPU; the model automatically falls back to PyTorch's built-in `eager` attention on XPU and CPU.
+>
+> Outputs closely match the CUDA and CPU paths. Minor float32 flow-matching rounding drift is expected and is not a bug. `--use_compile` is validated on CUDA; on XPU, prefer running without `--use_compile`.
+
 ---
 
 ## 📦 Model Download

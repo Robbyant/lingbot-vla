@@ -24,13 +24,22 @@ from transformers.modeling_outputs import (
     CausalLMOutputWithPast,
 )
 from transformers.modeling_utils import PreTrainedModel, ALL_ATTENTION_FUNCTIONS
+try:
+    from transformers.utils import LossKwargs
+except ImportError:
+    from typing import TypedDict
+    class LossKwargs(TypedDict, total=False):
+        pass
+    import transformers.utils
+    transformers.utils.LossKwargs = LossKwargs
+# LossKwargs compat
 from transformers.utils import (
     ModelOutput,
     add_start_docstrings,
     add_start_docstrings_to_model_forward,
     logging,
     replace_return_docstrings,
-    LossKwargs,
+    LossKwargs,  # type: ignore
     can_return_tuple,
     is_torch_flex_attn_available,
 )
@@ -1097,13 +1106,19 @@ class QwenvlWithExpertModel(PreTrainedModel):
         if self.config.vocab_size != 0 and self.config.vocab_size != 257152 and vlm_config.vocab_size != self.config.vocab_size:
             vlm_config.vocab_size = self.config.vocab_size
         
-        vlm_config._attn_implementation = 'flash_attention_2'
-        self.qwenvl = Qwen2_5_VLForConditionalGeneration._from_config(vlm_config, use_flash_attention_2=True)
+        # Attention backend: flash_attention_2 on CUDA (if installed), eager on XPU/CPU.
+        try:
+            from transformers.utils import is_flash_attn_2_available
+            _attn_impl = 'flash_attention_2' if is_flash_attn_2_available() else 'eager'
+        except Exception:
+            _attn_impl = 'eager'
+        vlm_config._attn_implementation = _attn_impl
+        self.qwenvl = Qwen2_5_VLForConditionalGeneration._from_config(vlm_config, attn_implementation=_attn_impl)
         if self.config.use_lm_head:
             self.qwenvl.tie_weights()
         self.config.qwen_expert_config.norm_qkv = self.config.norm_qkv
-        self.config.qwen_expert_config._attn_implementation = 'flash_attention_2'
-        self.qwen_expert = Qwen2ForCausalLM._from_config(self.config.qwen_expert_config, use_flash_attention_2=True, eval=eval)
+        self.config.qwen_expert_config._attn_implementation = _attn_impl
+        self.qwen_expert = Qwen2ForCausalLM._from_config(self.config.qwen_expert_config, eval=eval)
 
         self.rotary_pos_emb = None
         self.window_index = None
