@@ -1515,10 +1515,12 @@ class FlowMatching(nn.Module):
             assert config['depth']['num_backbone_tokens'] % self.num_task_tokens == 0
             self.depth_align_embs = nn.Parameter(
                 torch.randn(
-                   config['depth']['num_backbone_tokens'], config['llm']['dim_out']
+                    config['depth']['num_backbone_tokens'],
+                    config['llm']['dim_out'],
+                    dtype=torch.bfloat16,
                 )
-            ).to(dtype=torch.bfloat16)
-            self.depth_align_embs.requires_grad_ = True
+            )
+            self.depth_align_embs.requires_grad_(True)
             
             self.depth_align_head = TaskTokenDepthHead(config['depth'], llm_hidden_size=config['llm']['dim_out']).to(dtype=torch.bfloat16)
 
